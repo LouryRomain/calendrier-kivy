@@ -1,14 +1,16 @@
 #:kivy 1.1.1
+
+			
 <Button>:
 	background_normal: ''
 	background_color: 154/256,226/256,248/256,1
-	canvas.before:
+	canvas:
         Color:
             rgba: 0,0,0,1
         Line:
-            width: 2
+            width: 1
             rectangle: self.x, self.y, self.width, self.height
-	
+
 <Calender>:
 	canvas.before:
 		Color:

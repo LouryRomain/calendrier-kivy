@@ -40,6 +40,7 @@ Builder.load_file('status.kv')
 Builder.load_file('days.kv')
 Builder.load_file('calender.kv')
 Builder.load_file('year.kv')
+Builder.load_file('reminder.kv')
 
 
 #------Kivy GUI Configuration--
@@ -130,26 +131,75 @@ class Days(GridLayout):
 
 # class for Reminder in Dates
 class Reminder(BoxLayout):
-	def __init__(self,**kwargs):
+	def __init__(self,jour,**kwargs):
 		super().__init__(**kwargs)
-
+		selfsize_hint=(0.9,0.9)
 		# Layout arrangementw
 		self.orientation = 'vertical'
 		# Elevators information
-		self.layout_map=BoxLayout(orientation = 'horizontal' , size_hint = (1,1))
-		self.layout_map.add_widget(Label(size_hint=(0.1,1),text='Emploi du temps',font_size='20sp',color=(0,0,0,1)))
-		self.layout_note=BoxLayout(orientation = 'vertical' , size_hint = (0.5,0.8))
-		self.layout_note.add_widget(Button(on_press = self.on_press,text='Remplace11',pos_hint={'x': .5, 'y': 1},size_hint=(0.4,0.2),font_size='20sp',color=(0,0,0,1),background_color=color_shadow_blue))
+		box_entete=BoxLayout(size_hint=(0.9,0.2),orientation = 'vertical')
+		box_content=BoxLayout(size_hint=(0.9,0.8),pos_hint={'x': .05, 'y': 0.0},orientation = 'vertical')
+		box_am=BoxLayout(size_hint=(0.9,1))
+		box_pm=BoxLayout(size_hint=(0.9,1))
+		list_heure=self.get_hour(jour)
+		print(list_heure)
+		for i in range(12):
+			add_am=0
+			add_pm=0
+			if i in list_heure:
+					box_am.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" a.m",color=(0,0,0,1),background_color=(1,0,0,1)))
+					add_am=1
+			if i+12 in list_heure:
+					box_pm.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" p.m",color=(0,0,0,1),background_color=(1,0,0,1)))
+					add_pm=1
+			if add_am==0:
+					box_am.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" a.m",color=(0,0,0,1)))
+			if add_pm==0:
+					box_pm.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" p.m",color=(0,0,0,1)))
 
-		self.add_widget(self.layout_map)
-		self.add_widget(self.layout_note)
 
-		
+		box_content.add_widget(box_am)
+		box_content.add_widget(box_pm)
+		self.add_widget(box_entete)
+		self.add_widget(box_content)
+
+
+	def get_hour(self,jour):
+		find=0
+		app=App.get_running_app()
+		print(app.calendar_.dates_.list_jour_sel)
+		for i in app.calendar_.dates_.list_jour_sel:
+			if int(i)==int(jour):
+				find=1
+				break
+		if find==0:
+			return []
+		interval=[]
+		for i in app.calendar_.dates_.model.list_date:
+			min=0
+			max=24
+			if int(i[0][8:10])==int(jour):
+				min=int(i[0][11:13])
+			if int(i[1][8:10])==int(jour):
+				max=int(i[1][11:13])
+			if ((min!=0) or (max!=24)):
+				interval=interval+list(range(min, max+1))
+		print(app.calendar_.dates_.list_jour_sel)
+		if len(interval)==0:
+			return list(range(min, max))
+		else:
+			return interval
+
+
+		#for in app.dates_.model:
+			
+	
 	def on_release(self,event):
 		print ("Reminder OK Clicked!")
 		
 	def on_press(self,event):
 		print('ok')
+
 
 
 # ------------------------------------------------------------------------------------------------#
@@ -160,7 +210,7 @@ class Dates(GridLayout):
 		self.cols = 7
 		self.month=Months()
 		self.year=Year()
-		self.model=Model([['2020-05-13 16:00:00','2020-05-20 16:00:00'],['2020-05-25 16:00:00','2020-06-29 16:00:00']])
+		self.model=Model([['2020-05-13 10:00:00','2020-05-13 12:00:00'],['2020-05-13 16:00:00','2020-05-20 16:00:00'],['2020-05-25 16:00:00','2020-06-29 16:00:00']])
 		# Update dates paddle when choose different months
 		self.update_dates(self.year.year,self.month.month)
 
@@ -169,14 +219,13 @@ class Dates(GridLayout):
 		self.clear_widgets()
 		c  = calendar.monthcalendar(year,month)
 		# Look if passes is in current month
-		list_jour_sel=self.get_date_in_current(year,month)
-		print(list_jour_sel)
+		self.list_jour_sel=self.get_date_in_current(year,month)
 		# Show the best maintenance date if current month is clicked
 		for i in c:
 			for j in i:
 				if j == 0:
 					self.add_widget(Button(on_press = self.on_press,on_release=self.on_release,text = '{j}'.format(j=''),font_size='20sp',color=(0,0,0,1)))
-				elif j in list_jour_sel:
+				elif j in self.list_jour_sel:
 					self.add_widget(Button(on_press = self.on_press,on_release=self.on_release,text = '{j}'.format(j=j),background_color=(1,0,0,1),font_size='20sp',color=(0,0,0,1)))
 				else:
 					self.add_widget(Button(on_press = self.on_press, on_release=self.on_release,text = '{j}'.format(j=j),font_size='20sp',color=(0,0,0,1)))
@@ -187,6 +236,7 @@ class Dates(GridLayout):
 			if ((couple[0][0:7]<=str(year)+'-'+str(month).zfill(2)) and (couple[1][0:7]>=str(year)+'-'+str(month).zfill(2))):
 				list_out=list_out +(self.datetime_range(datetime.datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S'),datetime.datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S'),year,month))
 		return list(set(list_out))
+
 	def datetime_range(self,start,end,year,month):
 		span = end - start
 		list_tmp=[]
@@ -199,15 +249,20 @@ class Dates(GridLayout):
 		# Do something on close of popup
 		print('Popup dismiss')
 		pass
-	
+
+	def get_month_and_year(self):
+		app=App.get_running_app()
+		return [app.calendar_.year.year,app.calendar_.months_.month]
+		
 	def on_release(self,event):
-		event.background_color = 154/256,226/256,248/256,1
+		pass
+		#event.background_color = 154/256,226/256,248/256,1
 	
 	def on_press(self,event):
 		print ("date clicked :" + event.text)
-		event.background_color = 1,0,0,1
-		self.popup = Popup(title='Preventive Maintenance Information',title_color=(0,0,0,1),
-		content = Reminder(),
+		#event.background_color = 1,0,0,1
+		self.popup = Popup(title='Detail of Day : '+str(self.get_month_and_year()[0])+'-'+str(self.get_month_and_year()[1]).zfill(2)+'-'+event.text.zfill(2),title_color=(0,0,0,1),
+		content = Reminder(str(event.text)),
 		size_hint=(0.9,0.9),background='background.png')
 		self.popup.bind(on_dismiss = self.on_dismiss)
 		self.popup.open() 
@@ -238,7 +293,6 @@ class Months(BoxLayout):
 
 	def month_btn_release(self,instance):
 		instance.background_color=0.1,.5,.5,1
-		#instance.bind(on_release= lambda instance : Dates.update_dates())
 		self.update_date()
 		pass
 
