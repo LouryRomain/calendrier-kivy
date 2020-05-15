@@ -7,6 +7,7 @@ import datetime
 from kivy import resources
 from kivy.app import App
 from kivy.lang import Builder
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.properties import ListProperty
@@ -26,7 +27,9 @@ from model import Model
 from kivy.garden.graph import Graph, MeshLinePlot
 from kivy.uix.scrollview import ScrollView
 from datetime import timedelta
-
+from kivy.uix.widget import Widget
+from kivy.graphics import Color, Line,Ellipse
+import math as math
 
 
 color_shadow_blue=(.53125,.66796875,.7890625,1)
@@ -40,8 +43,8 @@ Builder.load_file('status.kv')
 Builder.load_file('days.kv')
 Builder.load_file('calender.kv')
 Builder.load_file('year.kv')
-Builder.load_file('reminder.kv')
-
+Builder.load_file('hours.kv')
+Builder.load_file('clock.kv')
 
 #------Kivy GUI Configuration--
 # class for calender.kv file
@@ -50,9 +53,9 @@ class Calender(BoxLayout):
 		super().__init__(**kwargs)
 		# Integrating other classes
 		self.year=Year()
-		self.months_=Months()
-		self.days_=Days()
-		self.dates_=Dates()
+		self.months=Months()
+		self.days=Days()
+		self.dates=Dates()
 		self.status_=Status()
 		# Adding layout
 		self.layout_1=BoxLayout(size_hint=(1,.1))
@@ -62,9 +65,9 @@ class Calender(BoxLayout):
 
 		self.layout_2=BoxLayout()
 		self.layout_3=BoxLayout(orientation='vertical')
-		self.layout_3.add_widget(self.days_)
-		self.layout_3.add_widget(self.dates_)
-		self.layout_2.add_widget(self.months_)
+		self.layout_3.add_widget(self.days)
+		self.layout_3.add_widget(self.dates)
+		self.layout_2.add_widget(self.months)
 		self.layout_2.add_widget(self.layout_3)
 
 		self.layout_4=BoxLayout(size_hint=(1,.1))
@@ -105,8 +108,8 @@ class Year(BoxLayout):
 
 	def update_date(self):
 		app=App.get_running_app()
-		dates=app.calendar_.dates_
-		dates.update_dates(app.calendar_.year.year,app.calendar_.months_.month)
+		dates=app.calendar.dates
+		dates.update_dates(app.calendar.year.year,app.calendar.months.month)
 		
 	def on_press_less(self):
 		self.year=self.year-1
@@ -115,11 +118,91 @@ class Year(BoxLayout):
 		self.ids['btn_add'].text=str(self.year+1)
 		self.update_date()
 
+		
+		
+		
 
+#------------------------------------------------------------------------------------------------#
+
+
+class MyClockWidget(FloatLayout):
+	pass
+
+
+class Ticks(Widget):
+	def __init__(self, **kwargs):
+		super(Ticks, self).__init__(**kwargs)
+		self.bind(pos=self.update_clock)
+		self.bind(size=self.update_clock)
+
+	def update_clock(self, *args):
+		self.canvas.clear()
+		with self.canvas:
+			Color(.5,.6,.9,1)
+			app=App.get_running_app()
+			for i in app.calendar.dates.list_minute:
+				Ellipse(pos=(self.center_x-self.r*0.75, self.center_y-self.r*0.75),size=(self.r*1.5,self.r*1.5),angle_start=i*6,angle_end=(i+1)*6)
 
 
 #------------------------------------------------------------------------------------------------#
 
+# class for Minutes.kv file
+class Minutes(BoxLayout):   	
+	def __init__(self,text,list_heure,**kwargs):
+		super().__init__(**kwargs)
+		list_minute=self.get_minute(text,list_heure)
+		App.get_running_app().calendar.dates.list_minute=list_minute
+		box_infos_pass=BoxLayout(size_hint=(0.5,1),orientation = 'vertical')
+		box_infos_pass.add_widget(MyClockWidget())
+		self.add_widget(box_infos_pass)
+
+	def get_minute(self,text,list_heure):
+		find=0
+		if text.split(' ')[1]=='p.m':
+			heure=int(text.split(' ')[0])+12
+		else:
+			heure=int(text.split(' ')[0])
+		min=0
+		max=0
+		for i in range(len(list_heure)):
+			if (list_heure[i]==heure) :
+				find=find+1
+				if i!=len(list_heure)-1:
+					if (list_heure[i+1]==list_heure[i]+1):
+						max=1
+				if i!=0:
+					if (list_heure[i-1]==list_heure[i]-1):
+						min=1
+		if find==0:
+			return []
+		if ((max==1) and (min==1)):
+			return list(range(0,60))
+		app=App.get_running_app()
+		if find==1:
+			if min==1:
+				for i in app.calendar.dates.model.list_date:
+					if i[1][11:13]==str(heure).zfill(2):
+						return list(range(0,int(i[1][14:16])))
+			elif max==1:
+				for i in app.calendar.dates.model.list_date:
+					if i[0][11:13]==str(heure).zfill(2):
+						return list(range(int(i[0][14:16]),60))
+			else:
+				for i in app.calendar.dates.model.list_date:
+					if i[0][11:13]==str(heure).zfill(2):
+						return list(range(int(i[0][14:16]),int(i[1][14:16])))
+		else:
+			interval=[]
+			for i in app.calendar.dates.model.list_date:
+				if i[0][11:13]==str(heure).zfill(2):
+					if i[1][11:13]==str(heure).zfill(2):
+						interval=interval+list(range(int(i[0][14:16]),int(i[1][14:16])))
+					else:
+						interval=interval+list(range(int(i[0][14:16]),60))
+				elif i[1][11:13]==str(heure).zfill(2):
+					interval=interval+list(range(0,int(i[1][14:16])))
+			return interval
+# ------------------------------------------------------------------------------------------------#
 
 # class for Days.kv file
 class Days(GridLayout):   	
@@ -129,8 +212,8 @@ class Days(GridLayout):
 # ------------------------------------------------------------------------------------------------#
 
 
-# class for Reminder in Dates
-class Reminder(BoxLayout):
+# class for Hours in Dates
+class Hours(BoxLayout):
 	def __init__(self,jour,**kwargs):
 		super().__init__(**kwargs)
 		selfsize_hint=(0.9,0.9)
@@ -141,15 +224,15 @@ class Reminder(BoxLayout):
 		box_content=BoxLayout(size_hint=(0.9,0.8),pos_hint={'x': .05, 'y': 0.0},orientation = 'vertical')
 		box_am=BoxLayout(size_hint=(0.9,1))
 		box_pm=BoxLayout(size_hint=(0.9,1))
-		list_heure=self.get_hour(jour)
-		print(list_heure)
+		self.list_heure=self.get_hour(jour)
+		print(self.list_heure)
 		for i in range(12):
 			add_am=0
 			add_pm=0
-			if i in list_heure:
+			if i in self.list_heure:
 					box_am.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" a.m",color=(0,0,0,1),background_color=(1,0,0,1)))
 					add_am=1
-			if i+12 in list_heure:
+			if i+12 in self.list_heure:
 					box_pm.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" p.m",color=(0,0,0,1),background_color=(1,0,0,1)))
 					add_pm=1
 			if add_am==0:
@@ -167,15 +250,15 @@ class Reminder(BoxLayout):
 	def get_hour(self,jour):
 		find=0
 		app=App.get_running_app()
-		print(app.calendar_.dates_.list_jour_sel)
-		for i in app.calendar_.dates_.list_jour_sel:
+		print(app.calendar.dates.list_jour_sel)
+		for i in app.calendar.dates.list_jour_sel:
 			if int(i)==int(jour):
 				find=1
 				break
 		if find==0:
 			return []
 		interval=[]
-		for i in app.calendar_.dates_.model.list_date:
+		for i in app.calendar.dates.model.list_date:
 			min=0
 			max=24
 			if int(i[0][8:10])==int(jour):
@@ -184,21 +267,26 @@ class Reminder(BoxLayout):
 				max=int(i[1][11:13])
 			if ((min!=0) or (max!=24)):
 				interval=interval+list(range(min, max+1))
-		print(app.calendar_.dates_.list_jour_sel)
+		print(app.calendar.dates.list_jour_sel)
 		if len(interval)==0:
 			return list(range(min, max))
 		else:
 			return interval
-
-
-		#for in app.dates_.model:
 			
-	
+	def on_dismiss(self, arg):
+		# Do something on close of popup
+		print('Popup dismiss')
+		pass
+
 	def on_release(self,event):
-		print ("Reminder OK Clicked!")
+		print ("Hours OK Clicked!")
 		
 	def on_press(self,event):
-		print('ok')
+		self.popup = Popup(title='Detail of hour : '+event.text,title_color=(0,0,0,1),
+		content = Minutes(str(event.text),self.list_heure),
+		size_hint=(0.7,0.7),background='background.png')
+		self.popup.bind(on_dismiss = self.on_dismiss)
+		self.popup.open() 
 
 
 
@@ -210,8 +298,9 @@ class Dates(GridLayout):
 		self.cols = 7
 		self.month=Months()
 		self.year=Year()
-		self.model=Model([['2020-05-13 10:00:00','2020-05-13 12:00:00'],['2020-05-13 16:00:00','2020-05-20 16:00:00'],['2020-05-25 16:00:00','2020-06-29 16:00:00']])
+		self.model=Model([['2020-05-13 10:50:00','2020-05-13 12:10:00'],['2020-05-13 12:20:00','2020-05-13 12:45:00'],['2020-05-13 16:00:00','2020-05-20 16:00:00'],['2020-05-25 16:00:00','2020-06-29 16:00:00'],['2021-05-25 16:36:00','2021-06-10 11:48:00']])
 		# Update dates paddle when choose different months
+		self.list_minute=[]
 		self.update_dates(self.year.year,self.month.month)
 
 	def update_dates(self,year,month):
@@ -252,7 +341,7 @@ class Dates(GridLayout):
 
 	def get_month_and_year(self):
 		app=App.get_running_app()
-		return [app.calendar_.year.year,app.calendar_.months_.month]
+		return [app.calendar.year.year,app.calendar.months.month]
 		
 	def on_release(self,event):
 		pass
@@ -262,7 +351,7 @@ class Dates(GridLayout):
 		print ("date clicked :" + event.text)
 		#event.background_color = 1,0,0,1
 		self.popup = Popup(title='Detail of Day : '+str(self.get_month_and_year()[0])+'-'+str(self.get_month_and_year()[1]).zfill(2)+'-'+event.text.zfill(2),title_color=(0,0,0,1),
-		content = Reminder(str(event.text)),
+		content = Hours(str(event.text)),
 		size_hint=(0.9,0.9),background='background.png')
 		self.popup.bind(on_dismiss = self.on_dismiss)
 		self.popup.open() 
@@ -298,8 +387,8 @@ class Months(BoxLayout):
 
 	def update_date(self):
 		app=App.get_running_app()
-		dates=app.calendar_.dates_
-		dates.update_dates(app.calendar_.year.year,self.month)
+		dates=app.calendar.dates
+		dates.update_dates(app.calendar.year.year,self.month)
 
 
 	def get_month(self,month_name):
@@ -317,11 +406,11 @@ class mainApp(App):
 	time = StringProperty()
 	def __init__(self,**kwargs):
 		super().__init__(**kwargs)
-		self.calendar_=Calender()
+		self.calendar=Calender()
 		#self.model_=Model() # Place model into Dates()
-		self.year=self.calendar_.year.year
-		self.month=self.calendar_.months_.month
-		self.day=self.calendar_.months_.day
+		self.year=self.calendar.year.year
+		self.month=self.calendar.months.month
+		self.day=self.calendar.months.day
 
 
 	def update(self,*args):
@@ -332,7 +421,7 @@ class mainApp(App):
 	def build(self):
 		self.title = "Remplace13"
 		Clock.schedule_interval(self.update,1)       
-		return self.calendar_
+		return self.calendar
 
 if __name__ =='__main__':
 	app = mainApp()
