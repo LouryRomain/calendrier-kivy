@@ -140,7 +140,7 @@ class Ticks(Widget):
 		self.canvas.clear()
 		list_minute=self.get_minute()
 		with self.canvas:
-			Color(.5,.6,.9,1)
+			Color(0.5,0.5,0.8,1)
 			for i in list_minute:
 				Ellipse(pos=(self.center_x-self.r*0.75, self.center_y-self.r*0.75),size=(self.r*1.5,self.r*1.5),angle_start=i*6,angle_end=(i+1)*6)
 
@@ -153,7 +153,6 @@ class Ticks(Widget):
 			heure=int(heure.split(' ')[0])+12
 		else:
 			heure=int(heure.split(' ')[0])
-		print(list_heure)
 		min=0
 		max=0
 		for i in range(len(list_heure)):
@@ -208,15 +207,39 @@ class Ticks(Widget):
 
 # class for Minutes.kv file
 class Minutes(BoxLayout):   	
-	def __init__(self,list_heure,**kwargs):
+	def __init__(self,status,**kwargs):
 		super().__init__(**kwargs)
 		box_infos_pass=BoxLayout(size_hint=(0.5,1),orientation = 'vertical')
 		box_infos_pass.add_widget(MyClockWidget())
+		box_infos_pass.add_widget(ColoredLabel(text="Detail per minute",size_hint=(0.6,0.1),pos_hint={"x":0.2,"y":0.0},color=(1,1,1,1)))
 		self.add_widget(box_infos_pass)
+		if status=='Free':
+			box_get_hour=FloatLayout(size_hint=(0.5,1))
+			box_get_hour.add_widget(Label(text='Your name:',size_hint=(0.3,0.07),pos_hint={"x":0.1,"y":0.6},color=(0,0,0,1)))
+			self.entry=TextInput(size_hint=(0.5,0.1),pos_hint={"x":0.45,"y":0.585})
+			box_get_hour.add_widget(self.entry)
+			box_get_hour.add_widget(Button(on_press=self.on_press,text='Register',size_hint=(0.4,0.2),pos_hint={"x":0.3,"y":0.2},background_color=(0.3,0.3,0.3,1)))
+			self.add_widget(box_get_hour)
+			
+	def on_press(self,event):
+		app=App.get_running_app()
+		year=app.calendar.year_sel
+		month=app.calendar.month_sel
+		day=app.calendar.day_sel
+		hour=app.calendar.hour_sel
+		file=open('reservation.csv','a+')
+		file.write(str(year)+'-'+str(month).zfill(2)+'-'+str(day).zfill(2)+","+str(hour)+",test1,"+str(datetime.datetime.now())+','+self.entry.text+'\n')
+		file.close()
+		app.calendar.dates.popup.content.popup.dismiss()
+		app.calendar.dates.popup.dismiss()
+		app.calendar.dates.data=Data()
+		
 
 
 # ------------------------------------------------------------------------------------------------#
-
+class ColoredLabel(Label):
+	pass
+# ------------------------------------------------------------------------------------------------#
 
 # class for Hours in Dates
 class Hours(BoxLayout):
@@ -227,28 +250,43 @@ class Hours(BoxLayout):
 		# Layout arrangementw
 		self.orientation = 'vertical'
 		# Elevators information
-		box_entete=BoxLayout(size_hint=(0.9,0.2),orientation = 'vertical')
-		box_content=BoxLayout(size_hint=(0.9,0.8),pos_hint={'x': .05, 'y': 0.0},orientation = 'vertical')
-		box_am=BoxLayout(size_hint=(0.9,1))
-		box_pm=BoxLayout(size_hint=(0.9,1))
+		box_entete=BoxLayout(size_hint=(1,0.1),orientation = 'vertical')
+		box_entete.add_widget(Label(text="Choose your reservation's hour",font_size=25,color=(0,0,0,1)))
+		box_content=BoxLayout(size_hint=(1,0.8),orientation = 'vertical')
+		box_legend_am=BoxLayout(size_hint=(1,0.07))
+		box_am=BoxLayout(size_hint=(1,0.4))
+		box_legend_pm=BoxLayout(size_hint=(1,0.07))
+		box_pm=BoxLayout(size_hint=(1,0.4))
+		year=str(app.calendar.year_sel).zfill(4)
+		month=str(app.calendar.month_sel).zfill(2)
+		day=str(app.calendar.day_sel).zfill(2)
 		self.list_heure_with_pass=self.get_hour()
+		df_reservation=app.calendar.dates.data.df_reservation
+		list_reservation_am=list(df_reservation[((df_reservation['date']==year+'-'+month+'-'+day) & (df_reservation.heure.str.contains('a.m')))]['heure'].apply(lambda x:int(x.split(' ')[0])))
+		list_reservation_pm=list(df_reservation[((df_reservation['date']==year+'-'+month+'-'+day) & (df_reservation.heure.str.contains('p.m')))]['heure'].apply(lambda x:int(x.split(' ')[0])))
 		for i in range(12):
-			add_am=0
-			add_pm=0
-			if i in self.list_heure_with_pass:
-					box_am.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" a.m",color=(0,0,0,1),background_color=(1,0,0,1)))
-					add_am=1
-			if i+12 in self.list_heure_with_pass:
-					box_pm.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" p.m",color=(0,0,0,1),background_color=(1,0,0,1)))
-					add_pm=1
-			if add_am==0:
-					box_am.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" a.m",color=(0,0,0,1)))
-			if add_pm==0:
-					box_pm.add_widget(Button(on_press=self.on_press,size_hint=(1/12,0.9),text=str(i)+" p.m",color=(0,0,0,1)))
+			box_legend_am.add_widget(ColoredLabel(text=str(i)+" a.m",color=(1,1,1,1)))
+			box_legend_pm.add_widget(ColoredLabel(text=str(i)+" p.m",color=(1,1,1,1)))
+			if i in list_reservation_am:
+					box_am.add_widget(Button(id=str(i)+" a.m",on_press=self.on_press,size_hint=(1/12,0.9),text="Closed",color=(0,0,0,1),background_color=(1,0,0,1)))
+			elif i in self.list_heure_with_pass:
+					box_am.add_widget(Button(id=str(i)+" a.m",on_press=self.on_press,size_hint=(1/12,0.9),text="Free",color=(0,0,0,1),background_color=(0.5,0.8,0,1)))
+			else:
+					box_am.add_widget(Button(id=str(i)+" a.m",on_press=self.on_press,size_hint=(1/12,0.9),color=(0,0,0,1)))
 
+			if i in list_reservation_pm:
+					box_pm.add_widget(Button(id=str(i)+" p.m",on_press=self.on_press,size_hint=(1/12,0.9),text="Closed",color=(0,0,0,1),background_color=(1,0,0,1)))
+			elif i+12 in self.list_heure_with_pass:
+					box_pm.add_widget(Button(id=str(i)+" p.m",on_press=self.on_press,size_hint=(1/12,0.9),text="Free",color=(0,0,0,1),background_color=(0.5,0.8,0,1)))
+			else:
+					box_pm.add_widget(Button(id=str(i)+" p.m",on_press=self.on_press,size_hint=(1/12,0.9),color=(0,0,0,1)))
 
+		box_content.add_widget(box_legend_am)
 		box_content.add_widget(box_am)
+		box_content.add_widget(BoxLayout(size_hint=(1,0.05)))
+		box_content.add_widget(box_legend_pm)
 		box_content.add_widget(box_pm)
+		box_content.add_widget(BoxLayout(size_hint=(1,0.05)))
 		self.add_widget(box_entete)
 		self.add_widget(box_content)
 
@@ -283,9 +321,9 @@ class Hours(BoxLayout):
 		
 	def on_press(self,event):
 		app=App.get_running_app()
-		app.calendar.hour_sel=event.text
-		self.popup = Popup(title='Detail of hour du '+str(app.calendar.year_sel)+'-'+str(app.calendar.month_sel)+'-'+str(app.calendar.day_sel)+' : '+str(app.calendar.hour_sel),title_color=(0,0,0,1),
-		content = Minutes(self.list_heure_with_pass),
+		app.calendar.hour_sel=event.id
+		self.popup = Popup(title='Detail of hour du '+str(app.calendar.year_sel)+'-'+str(app.calendar.month_sel).zfill(2)+'-'+str(app.calendar.day_sel).zfill(2)+' : '+str(app.calendar.hour_sel),title_color=(0,0,0,1),
+		content = Minutes(event.text),
 		size_hint=(0.7,0.7),background='background.png')
 		self.popup.open() 
 
@@ -317,7 +355,6 @@ class Dates(GridLayout):
 			year=app.calendar.year_sel
 			month=app.calendar.month_sel
 		except:
-			print('init')
 			year=datetime.datetime.now().year
 			month=datetime.datetime.now().month
 		c  = calendar.monthcalendar(year,month)
@@ -329,7 +366,7 @@ class Dates(GridLayout):
 				if j == 0:
 					self.add_widget(Button(on_press = self.on_press,text = '{j}'.format(j=''),font_size='20sp',color=(0,0,0,1)))
 				elif j in self.list_jour_with_pass:
-					self.add_widget(Button(on_press = self.on_press,text = '{j}'.format(j=j),background_color=(1,0,0,1),font_size='20sp',color=(0,0,0,1)))
+					self.add_widget(Button(on_press = self.on_press,text = '{j}'.format(j=j),background_color=(0.5,0.8,0,1),font_size='20sp',color=(0,0,0,1)))
 				else:
 					self.add_widget(Button(on_press = self.on_press,text = '{j}'.format(j=j),font_size='20sp',color=(0,0,0,1)))
 
@@ -369,9 +406,9 @@ class Months(BoxLayout):
 	def __init__(self,**kwargs):
 		super().__init__(**kwargs)
 		# An pointer to current month button
-		self.now_btn=Button()
+		self.now_btn=self.ids['btn_'+self.get_reverse_month(datetime.datetime.now().month).lower()]
 		self.btn_color=(17/256,64/256,108/256,1)
-		self.ids['btn_'+self.get_reverse_month(datetime.datetime.now().month).lower()].background_color=0.1,.5,.5,1
+		self.ids['btn_'+self.get_reverse_month(datetime.datetime.now().month).lower()].background_color=(0.1,.5,.5,1)
 
 
 	def month_btn_press(self,instance):

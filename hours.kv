@@ -1,2 +1,9 @@
 #:kivy 1.1.1
-<Reminder>:
+<ColoredLabel>:
+  bcolor: 0, 0, 0, 1
+  canvas.before:
+    Color:
+      rgba: self.bcolor
+    Rectangle:
+      pos: self.pos
+      size: self.size
