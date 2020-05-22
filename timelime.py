@@ -25,6 +25,7 @@ from kivy.properties import ListProperty, NumericProperty, OptionProperty, \
 from kivy.uix.accordion import AccordionItem, Accordion
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.label import Label
 from math import ceil, floor
 from numbers import Number
@@ -50,6 +51,24 @@ Builder.load_string('''
 ''')
 class AutoSizeLabel(Label):
     pass
+
+    
+class PassButton(ToggleButton):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.label=Label(text='test')
+        self.active=False
+
+    def on_press(self):
+        app=App.get_running_app()
+        if not self.active:
+            app.boxentete.add_widget(self.label)
+            self.active=True
+        else:
+            self.active=False
+            app.boxentete.remove_widget(self.label)
+
+
 
 class TimeLabeller(TickLabeller):
     '''default labeller of :class:`Timeline`. For an example of its graphics,
@@ -440,7 +459,8 @@ class TimeTick(Tick):
         app=App.get_running_app()
         if str(app.timeline.get_time_0())[:13]==str(time)[:13]:
             app.boxbtn.clear_widgets()
-        app.boxbtn.add_widget(Button(pos=(tick_pos,int(Window.size[1]*0.18))))
+            app.boxe.clear_widgets()
+        app.boxbtn.add_widget(PassButton(pos=(tick_pos,int(Window.size[1]*0.18))))
         return tick_pos, tick_index
     
     def pos_of(self, tickline, time):
@@ -606,6 +626,7 @@ class TimelineApp(App):
 		super().__init__(**kwargs)
 		self.box=BoxLayout(orientation='vertical')
 		self.boxentete=BoxLayout(size_hint=(1,0.72))
+		
 		self.boxbtn=FloatLayout(size_hint=(1,0.1))
 		self.timeline = Timeline(size_hint=(1,0.18),
 					backward=False,
