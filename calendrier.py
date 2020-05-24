@@ -30,7 +30,21 @@ from datetime import timedelta
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Line,Ellipse
 import math as math
+import timeline
+from kivy.core.window import Window
 
+try:
+    from tzlocal import get_localzone
+except ImportError:
+    from jnius import autoclass
+    from pytz import timezone
+    TimeZone = autoclass('java.util.TimeZone')
+    
+    def get_localzone():
+        return timezone(TimeZone.getDefault().getID())
+    
+def local_now(date):
+    return get_localzone().localize(date)  
 
 color_shadow_blue=(.53125,.66796875,.7890625,1)
 color_sky_blue=(1/256,158/256,213/256,1)
@@ -43,8 +57,6 @@ Builder.load_file('status.kv')
 Builder.load_file('days.kv')
 Builder.load_file('calender.kv')
 Builder.load_file('year.kv')
-Builder.load_file('hours.kv')
-Builder.load_file('clock.kv')
 
 #------Kivy GUI Configuration--
 # class for calender.kv file
@@ -101,6 +113,7 @@ class Year(BoxLayout):
 		self.ids['btn_add'].text=str(datetime.datetime.now().year+1)
 	
 	def on_press_add(self):
+		app=App.get_running_app()
 		app.calendar.year_sel=app.calendar.year_sel+1
 		self.ids['btn_less'].text=str(app.calendar.year_sel-1)
 		self.ids['currentyear'].text=str(app.calendar.year_sel)
@@ -113,6 +126,7 @@ class Year(BoxLayout):
 		dates.update_dates()
 		
 	def on_press_less(self):
+		app=App.get_running_app()
 		app.calendar.year_sel=app.calendar.year_sel-1
 		self.ids['btn_less'].text=str(app.calendar.year_sel-1)
 		self.ids['currentyear'].text=str(app.calendar.year_sel)
@@ -126,6 +140,11 @@ class Year(BoxLayout):
 #------------------------------------------------------------------------------------------------#
 
 
+
+
+
+#------------------------------------------------------------------------------------------------#
+"""
 class MyClockWidget(FloatLayout):
 	pass
 
@@ -235,7 +254,6 @@ class Minutes(BoxLayout):
 		app.calendar.dates.data=Data()
 		
 
-
 # ------------------------------------------------------------------------------------------------#
 class ColoredLabel(Label):
 	pass
@@ -328,7 +346,7 @@ class Hours(BoxLayout):
 		self.popup.open() 
 
 
-
+"""
 # ------------------------------------------------------------------------------------------------#
 # class for Days.kv file
 class Days(GridLayout):   	
@@ -393,8 +411,24 @@ class Dates(GridLayout):
 	def on_press(self,event):
 		app=App.get_running_app()
 		app.calendar.day_sel=int(event.text)
+		self.box=BoxLayout(orientation='horizontal')
+		self.boxentete=BoxLayout(size_hint=(0.5,1),orientation='vertical')
+		self.boxbtn=FloatLayout(size_hint=(0.3,1))
+		self.timeline = timeline.Timeline(size_hint=(0.2,1),
+					backward=False,
+					orientation='vertical',
+					ticks=(timeline.selected_time_ticks()),
+					line_width =1,
+					line_offset=Window.size[1]*0.2*0.5
+					)
+
+		self.box.add_widget(self.timeline)
+		self.box.add_widget(self.boxbtn)
+		self.box.add_widget(self.boxentete)
+		now=local_now(datetime.datetime(app.calendar.year_sel,app.calendar.month_sel,app.calendar.day_sel))
+		self.timeline.center_on_timeframe(now ,now+ datetime.timedelta(days=1))
 		self.popup = Popup(title='Detail of Day : '+str(app.calendar.year_sel)+'-'+str(app.calendar.month_sel).zfill(2)+'-'+str(app.calendar.day_sel).zfill(2),title_color=(0,0,0,1),
-		content = Hours(),
+		content = self.box,
 		size_hint=(0.9,0.9),background='background.png')
 		self.popup.open() 
 
