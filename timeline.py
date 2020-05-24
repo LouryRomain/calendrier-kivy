@@ -2,8 +2,6 @@ from kivy.app import App
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.core.window import Window
-
-from kivy.garden.mapview import MapView, MapMarker
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.metrics import dp
@@ -31,16 +29,8 @@ from math import ceil, floor
 from numbers import Number
 from pytz import UTC
 
-try:
-	from tzlocal import get_localzone
-except ImportError:
-	from jnius import autoclass
-	from pytz import timezone
-	TimeZone = autoclass('java.util.TimeZone')
-	
-	def get_localzone():
-		return timezone(TimeZone.getDefault().getID())
-	
+from tzlocal import get_localzone
+
 def local_now():
 	return get_localzone().localize(datetime.now())	
 

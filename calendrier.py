@@ -32,19 +32,12 @@ from kivy.graphics import Color, Line,Ellipse
 import math as math
 import timeline
 from kivy.core.window import Window
+from tzlocal import get_localzone
 
-try:
-    from tzlocal import get_localzone
-except ImportError:
-    from jnius import autoclass
-    from pytz import timezone
-    TimeZone = autoclass('java.util.TimeZone')
-    
-    def get_localzone():
-        return timezone(TimeZone.getDefault().getID())
-    
+
+
 def local_now(date):
-    return get_localzone().localize(date)  
+	return get_localzone().localize(date)  
 
 color_shadow_blue=(.53125,.66796875,.7890625,1)
 color_sky_blue=(1/256,158/256,213/256,1)
