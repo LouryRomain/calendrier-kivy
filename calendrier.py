@@ -16,6 +16,7 @@ from kivy.properties import StringProperty
 from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.label import Label
 from kivy.event import EventDispatcher
 from kivy.uix.textinput import TextInput
@@ -33,7 +34,7 @@ import math as math
 import timeline
 from kivy.core.window import Window
 from tzlocal import get_localzone
-
+import selection
 
 
 def local_now(date):
@@ -92,8 +93,22 @@ class Status(BoxLayout,EventDispatcher):
 		super().__init__(**kwargs)
 		self.orientation='horizontal'
 
-		
-		
+#------------------------------------------------------------------------------------------------#
+class RegisterButton(ToggleButton):
+	def __init__(self, **kw):
+		super().__init__(**kw)
+		self.active=False
+		self.background_color=(0.5,0.8,0,1)
+
+	def on_press(self):
+		app=App.get_running_app()
+		if not self.active:
+			self.boxregister=selection.SelectionnerInterval(size_hint=(0.0001,1))
+			app.calendar.dates.box.add_widget(self.boxregister)
+			self.active=True
+		else:
+			self.active=False
+			app.calendar.dates.box.remove_widget(self.boxregister)
 #------------------------------------------------------------------------------------------------#
 
 class Year(BoxLayout):
@@ -401,12 +416,24 @@ class Dates(GridLayout):
 		return list_tmp
 
 
+
+
 	def on_press(self,event):
 		app=App.get_running_app()
 		app.calendar.day_sel=int(event.text)
+		self.popup_content=BoxLayout(orientation='vertical')
+
 		self.box=BoxLayout(orientation='horizontal')
-		self.boxentete=BoxLayout(size_hint=(0.5,1),orientation='vertical')
-		self.boxbtn=FloatLayout(size_hint=(0.3,1))
+		self.boxentete=BoxLayout(size_hint=(1,0.1),orientation='horizontal')
+		self.boxentete.add_widget(Label(text='Timeline',size_hint=(0.22,1),color=(0,0,0,1)))
+		self.boxentete.add_widget(Label(text='Passes',size_hint=(0.17,1),color=(0,0,0,1)))
+		self.boxentete.add_widget(Label(text='Reservations',size_hint=(0.15,1),color=(0,0,0,1)))
+		self.boxentete.add_widget(Label(text='Information',size_hint=(0.4,1),color=(0,0,0,1)))
+		self.registerbutton=RegisterButton(text='Register',size_hint=(0.1,0.7),pos_hint={"x":0,"y":0.15},color=(0,0,0,1))
+		self.boxentete.add_widget(self.registerbutton)
+		self.boxinfo=BoxLayout(size_hint=(0.5,1),orientation='vertical')
+		self.boxbtn=FloatLayout(size_hint=(0.15,1))
+		self.boxresa=FloatLayout(size_hint=(0.15,1))
 		self.timeline = timeline.Timeline(size_hint=(0.2,1),
 					backward=False,
 					orientation='vertical',
@@ -415,13 +442,17 @@ class Dates(GridLayout):
 					line_offset=Window.size[1]*0.2*0.5
 					)
 
+
 		self.box.add_widget(self.timeline)
 		self.box.add_widget(self.boxbtn)
-		self.box.add_widget(self.boxentete)
+		self.box.add_widget(self.boxresa)
+		self.box.add_widget(self.boxinfo)
+		self.popup_content.add_widget(self.boxentete)
+		self.popup_content.add_widget(self.box)
 		now=local_now(datetime.datetime(app.calendar.year_sel,app.calendar.month_sel,app.calendar.day_sel))
 		self.timeline.center_on_timeframe(now ,now+ datetime.timedelta(days=1))
 		self.popup = Popup(title='Detail of Day : '+str(app.calendar.year_sel)+'-'+str(app.calendar.month_sel).zfill(2)+'-'+str(app.calendar.day_sel).zfill(2),title_color=(0,0,0,1),
-		content = self.box,
+		content = self.popup_content,
 		size_hint=(0.9,0.9),background='background.png')
 		self.popup.open() 
 

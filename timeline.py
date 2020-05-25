@@ -1,3 +1,4 @@
+import numpy as np
 from kivy.app import App
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
@@ -46,6 +47,14 @@ Builder.load_string('''
 		Rectangle:
 			pos: self.pos
 			size: self.size
+
+<ResaLabel>:
+	canvas.before:
+		Color:
+			rgba:0.8, 0.5, 0,0.3 # your color here
+		Rectangle:
+			pos: self.pos
+			size: self.size
 ''')
 class AutoSizeLabel(Label):
 	pass
@@ -61,14 +70,34 @@ class PassButton(ToggleButton):
 	def on_press(self):
 		app=App.get_running_app()
 		if not self.active:
-			app.calendar.dates.boxentete.add_widget(self.label)
+			app.calendar.dates.boxinfo.add_widget(self.label)
 			self.active=True
 		else:
 			self.active=False
-			app.calendar.dates.boxentete.remove_widget(self.label)
+			app.calendar.dates.boxinfo.remove_widget(self.label)
+
+class ResaButton(ToggleButton):
+	def __init__(self,text_info, **kw):
+		super().__init__(**kw)
+		self.label=Label(text=text_info,color=(0,0,0,1))
+		self.active=False
+		self.background_color=(0.8,0.5,0,1)
+
+	def on_press(self):
+		app=App.get_running_app()
+		if not self.active:
+			app.calendar.dates.boxinfo.add_widget(self.label)
+			self.active=True
+		else:
+			self.active=False
+			app.calendar.dates.boxinfo.remove_widget(self.label)
 
 class PassLabel(Label):
 	pass
+
+class ResaLabel(Label):
+	pass
+
 
 class TimeLabeller(TickLabeller):
 
@@ -618,6 +647,18 @@ class Timeline(Tickline):
 		else:
 			return sys.exit()
 
+	def add_button(self,border_inf,border_sup,fenetre_inf,fenetre_sup,ref_second,box,label,button):
+		try:
+			min_f,max_f=self.intersection_date(border_inf,border_sup,fenetre_inf,fenetre_sup)
+			second_inf=(min_f-border_inf).total_seconds()
+			second_int=(max_f-min_f).total_seconds()
+			if (second_int/ref_second)<0.035:
+				box.add_widget(label(size_hint=(0.9,second_int/ref_second),pos_hint={"x":0.2,"y":(second_inf/ref_second)}))
+			else:
+				box.add_widget(button(size_hint=(0.9,second_int/ref_second),pos_hint={"x":0.2,"y":(second_inf/ref_second)},text_info="start pass :"+str(fenetre_inf)+"\n end pass :"+str(fenetre_sup)))
+		except:
+			pass
+
 
 	def translate_by(self, distance):
 		self._versioned_scale = self.scale
@@ -625,22 +666,30 @@ class Timeline(Tickline):
 		self.index_1 += distance
 		app=App.get_running_app()
 		app.calendar.dates.boxbtn.clear_widgets()
-		app.calendar.dates.boxentete.clear_widgets()
+		app.calendar.dates.boxresa.clear_widgets()
+		app.calendar.dates.boxinfo.clear_widgets()
 		border_inf=self.datetime_of(self.index_0)
 		border_sup=self.datetime_of(self.index_1)
 		ref_second=(border_sup-border_inf).total_seconds()
+		df_reservation=np.array(app.calendar.dates.data.df_reservation[['start_date','end_date']])
+		print(df_reservation)
 		for couple in app.calendar.dates.data.list_date:
-			try:
-				min_f,max_f=self.intersection_date(border_inf,border_sup,get_localzone().localize(datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S')),get_localzone().localize(datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S')))
-				second_inf=(min_f-border_inf).total_seconds()
-				second_int=(max_f-min_f).total_seconds()
-				if (second_int/ref_second)<0.03:
-					app.calendar.dates.boxbtn.add_widget(PassLabel(size_hint=(0.3,second_int/ref_second),pos_hint={"x":0.2,"y":(second_inf/ref_second)}))
-				else:
-					app.calendar.dates.boxbtn.add_widget(PassButton(size_hint=(0.3,second_int/ref_second),pos_hint={"x":0.2,"y":(second_inf/ref_second)},text_info="start pass :"+couple[0]+"\n end pass :"+couple[1]))
-			except:
-				continue
-
-
+			self.add_button(border_inf,
+							border_sup,
+							get_localzone().localize(datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S')),
+							get_localzone().localize(datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S')),
+							ref_second,
+							app.calendar.dates.boxbtn,
+							PassLabel,
+							PassButton)
+		for couple in df_reservation:
+			self.add_button(border_inf,
+							border_sup,
+							get_localzone().localize(datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S'))
+							,get_localzone().localize(datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S')),
+							ref_second,
+							app.calendar.dates.boxresa,
+							ResaLabel,
+							ResaButton)
 
 
