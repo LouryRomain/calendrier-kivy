@@ -442,7 +442,6 @@ class Dates(GridLayout):
 					line_offset=Window.size[1]*0.2*0.5
 					)
 
-
 		self.box.add_widget(self.timeline)
 		self.box.add_widget(self.boxbtn)
 		self.box.add_widget(self.boxresa)

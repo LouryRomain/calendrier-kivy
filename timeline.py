@@ -656,6 +656,7 @@ class Timeline(Tickline):
 				box.add_widget(label(size_hint=(0.9,second_int/ref_second),pos_hint={"x":0.2,"y":(second_inf/ref_second)}))
 			else:
 				box.add_widget(button(size_hint=(0.9,second_int/ref_second),pos_hint={"x":0.2,"y":(second_inf/ref_second)},text_info="start pass :"+str(fenetre_inf)+"\n end pass :"+str(fenetre_sup)))
+			return [fenetre_inf,fenetre_sup]
 		except:
 			pass
 
@@ -664,6 +665,7 @@ class Timeline(Tickline):
 		self._versioned_scale = self.scale
 		self.index_0 += distance
 		self.index_1 += distance
+		self.resatime=[]
 		app=App.get_running_app()
 		app.calendar.dates.boxbtn.clear_widgets()
 		app.calendar.dates.boxresa.clear_widgets()
@@ -683,13 +685,13 @@ class Timeline(Tickline):
 							PassLabel,
 							PassButton)
 		for couple in df_reservation:
-			self.add_button(border_inf,
+			self.resatime.append(self.add_button(border_inf,
 							border_sup,
 							get_localzone().localize(datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S'))
 							,get_localzone().localize(datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S')),
 							ref_second,
 							app.calendar.dates.boxresa,
 							ResaLabel,
-							ResaButton)
+							ResaButton))
 
 
