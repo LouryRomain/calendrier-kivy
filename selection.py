@@ -22,12 +22,15 @@ class SelectionnerInterval(FloatLayout):
 	def enable_selection(self,touchy,starttouch):
 		time_touchy=self.time_t0+timedelta(seconds=int(((touchy-self.pos_t0)/self.pos_interval)*self.time_interval))
 		time_start=self.time_t0+timedelta(seconds=int(((starttouch-self.pos_t0)/self.pos_interval)*self.time_interval))
-		for i in self.timeline.resatime:
-			if (((time_touchy <i[0])and (time_start <i[0]))
-				or ((time_touchy >i[1]) and (time_start >i[1]))):
-				self.enable=1
-			else:
-				self.enable=0
+		if self.timeline.resatime!=[None]:
+			for i in self.timeline.resatime:
+				if (((time_touchy <i[0])and (time_start <i[0]))
+					or ((time_touchy >i[1]) and (time_start >i[1]))):
+					self.enable=1
+				else:
+					self.enable=0
+		else:
+			self.enable=1
 
 	def on_touch_down(self, touch):
 		win = self.get_parent_window()
