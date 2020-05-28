@@ -55,9 +55,11 @@ Builder.load_string('''
 		Rectangle:
 			pos: self.pos
 			size: self.size
+
 ''')
 class AutoSizeLabel(Label):
 	pass
+
 
 
 class PassButton(ToggleButton):
@@ -670,26 +672,25 @@ class Timeline(Tickline):
 		app.calendar.dates.boxbtn.clear_widgets()
 		app.calendar.dates.boxresa.clear_widgets()
 		app.calendar.dates.boxinfo.clear_widgets()
-		border_inf=self.datetime_of(self.index_0)
-		border_sup=self.datetime_of(self.index_1)
-		ref_second=(border_sup-border_inf).total_seconds()
-		df_reservation=np.array(app.calendar.dates.data.df_reservation[['start_date','end_date']])
-		print(df_reservation)
+		self.border_inf=self.datetime_of(self.index_0)
+		self.border_sup=self.datetime_of(self.index_1)
+		self.ref_second=(self.border_sup-self.border_inf).total_seconds()
+		self.df_reservation=np.array(app.calendar.dates.data.df_reservation[['start_date','end_date']])
 		for couple in app.calendar.dates.data.list_date:
-			self.add_button(border_inf,
-							border_sup,
+			self.add_button(self.border_inf,
+							self.border_sup,
 							get_localzone().localize(datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S')),
 							get_localzone().localize(datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S')),
-							ref_second,
+							self.ref_second,
 							app.calendar.dates.boxbtn,
 							PassLabel,
 							PassButton)
-		for couple in df_reservation:
-			self.resatime.append(self.add_button(border_inf,
-							border_sup,
+		for couple in self.df_reservation:
+			self.resatime.append(self.add_button(self.border_inf,
+							self.border_sup,
 							get_localzone().localize(datetime.strptime(couple[0], '%Y-%m-%d %H:%M:%S'))
 							,get_localzone().localize(datetime.strptime(couple[1], '%Y-%m-%d %H:%M:%S')),
-							ref_second,
+							self.ref_second,
 							app.calendar.dates.boxresa,
 							ResaLabel,
 							ResaButton))
