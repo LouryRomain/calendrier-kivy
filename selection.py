@@ -49,12 +49,21 @@ class RegistrationButton(Button):
 		app=App.get_running_app()
 		start_resa=app.calendar.dates.registerbutton.boxregister.start_entry.text
 		end_resa=app.calendar.dates.registerbutton.boxregister.end_entry.text
-		app.calendar.dates.registerbutton.boxregister.enable_selection(get_localzone().localize(datetime.strptime(start_resa, '%Y-%m-%d %H:%M:%S')),get_localzone().localize(datetime.strptime(end_resa, '%Y-%m-%d %H:%M:%S')),0,app.calendar.dates.timeline.df_reservation)
+		try:
+			start_resa_dt=get_localzone().localize(datetime.strptime(start_resa, '%Y-%m-%d %H:%M:%S'))
+			end_resa_dt=get_localzone().localize(datetime.strptime(end_resa, '%Y-%m-%d %H:%M:%S'))
+		except:
+			self.popup=Popup(title='Error',title_color=(1,0,0,1),
+			content = Label(text='Error date format',color=(0,0,0,1)),
+			size_hint=(0.4,0.4),pos_hint={"x":0.3,"y":0.3},background='background.png')
+			self.popup.open()
+			return
+		app.calendar.dates.registerbutton.boxregister.enable_selection(start_resa_dt,end_resa_dt,0,app.calendar.dates.timeline.df_reservation)
 		if app.calendar.dates.registerbutton.boxregister.enable==1:
 			app.calendar.dates.timeline.resatime.append(app.calendar.dates.timeline.add_button(app.calendar.dates.timeline.border_inf,
 							app.calendar.dates.timeline.border_sup,
-							get_localzone().localize(datetime.strptime(start_resa, '%Y-%m-%d %H:%M:%S')),
-							get_localzone().localize(datetime.strptime(end_resa, '%Y-%m-%d %H:%M:%S')),
+							start_resa_dt,
+							end_resa_dt,
 							app.calendar.dates.timeline.ref_second,
 							app.calendar.dates.boxresa,
 							ResaLabelLive,
@@ -65,7 +74,10 @@ class RegistrationButton(Button):
 			app.calendar.dates.data=Data()
 			app.calendar.dates.registerbutton.boxregister.popup.dismiss()
 		else:
-			print('no')
+			self.popup=Popup(title='Error',title_color=(1,0,0,1),
+			content = Label(text='Overlapping',color=(0,0,0,1)),
+			size_hint=(0.4,0.4),pos_hint={"x":0.3,"y":0.3},background='background.png')
+			self.popup.open()
 class SelectionnerInterval(FloatLayout):
 	def __init__(self,**kw):
 		super(SelectionnerInterval, self).__init__(**kw)
